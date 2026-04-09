@@ -89,6 +89,34 @@ export default function AlkalineDashboard() {
   const {data:Alkaliconsumed} = useSWR(`/api/alkaliconsumed?period=${period}&date_start=${date_start}&date_end=${date_end}`, fetcher);
   const {data:Alkalirecieved} = useSWR(`/api/alkalirecieved?period=${period}&date_start=${date_start}&date_end=${date_end}`, fetcher)
   const {data:Alkalimixed} = useSWR(`/api/alkalimixed?period=${period}&date_start=${date_start}&date_end=${date_end}`, fetcher)
+
+  const {data: Wgcacak} = useSWR(`/api/wgcacak`, fetcher)
+
+  useEffect(() => {
+
+    // if (Wgcacak) {
+    //   setWgcacak(Wgcacak);
+    // }
+
+    if (Wgcacak) {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const lastUpdate = Number(Wgcacak.Lastupdate) || 0;
+    const diffSeconds = nowSeconds - lastUpdate;
+
+    if (diffSeconds > 60) {
+      // ระบุ Record<string, number> เพื่อให้ยอมรับการ index ด้วย string
+      const offlineData = Object.keys(Wgcacak).reduce((acc, key) => {
+        acc[key] = 0;
+        return acc;
+      }, {} as Record<string, any>) as Wgcacak; // cast กลับเป็น Wgcacak ตอนจบ
+      
+      setWgcacak(offlineData);
+    } else {
+      setWgcacak(Wgcacak);
+    }
+  }
+
+  }, [Wgcacak]);
   
   // Consumed
   const [alkaliPieData, setAlkaliPieData] = useState<PieDataPoint[]>([]);

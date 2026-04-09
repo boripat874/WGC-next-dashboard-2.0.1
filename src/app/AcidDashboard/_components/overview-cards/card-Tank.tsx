@@ -31,7 +31,7 @@ interface ModeCardData {
   bgColor: string;
   textColor: string;
 }
-
+ 
 export const TankCard: React.FC<{ tank: TankCardData }> = ({ tank }) => (
     <div className={`${tank.bgColor} card_realtime_tank`}>
 
@@ -51,21 +51,21 @@ export const TankCard: React.FC<{ tank: TankCardData }> = ({ tank }) => (
         <div className='flex flex-col justify-end items-end'>
           <div className='flex flex-row'>
 
-              <p className={`card_realtime_value_tank ${tank.textColor}`}> {tank.value_kg} </p>
+              <p className={`card_realtime_value_tank ${tank.textColor}`}> {Number(tank.value_kg).toLocaleString('en-US', {minimumFractionDigits: 2,maximumFractionDigits: 2})} </p>
               <p className={`w-10 pl-3 text-start ${tank.textColor}`}>kg</p>
 
           </div>
 
           <div className='flex flex-row '>
 
-              <p className={`card_realtime_value_tank ${tank.textColor}`}> {tank.value_m3} </p>
+              <p className={`card_realtime_value_tank ${tank.textColor}`}> {Number(tank.value_m3).toLocaleString('en-US', {minimumFractionDigits: 2,maximumFractionDigits: 2})} </p>
               <p className={`w-10 pl-3 text-start ${tank.textColor}`}>m³</p>
 
           </div>
           {tank.value_mm && (
             <div className='flex flex-row '>
 
-                <p className={`card_realtime_value_tank ${tank.textColor}`}> {tank.value_mm} </p>
+                <p className={`card_realtime_value_tank ${tank.textColor}`}> {Number(tank.value_mm).toLocaleString('en-US', {minimumFractionDigits: 2,maximumFractionDigits: 2})} </p>
                 <p className={`w-10 pl-3 text-start ${tank.textColor}`}>mm</p>
 
             </div>
@@ -115,14 +115,14 @@ export const TankCardSummary: React.FC<{ tank: TankCardData }> = ({ tank }) => (
 
           <div className='flex flex-row'>
 
-              <p className={` ${tank.textColor} w-[100px] text-2xl sm:text-base pr-2 font-inter font-normal leading-8 sm:leading-4 lg:leading-[25px] text-end`}> {tank.value_kg} </p>
+              <p className={` ${tank.textColor} w-[100px] text-2xl sm:text-base pr-2 font-inter font-normal leading-8 sm:leading-4 lg:leading-[25px] text-end`}> {Number(tank.value_kg).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} </p>
               <p className={`w-10 pl-3 text-start ${tank.textColor}`}>kg</p>
 
           </div>
 
           <div className='flex flex-row '>
 
-              <p className={` ${tank.textColor} w-[100px] text-2xl sm:text-base pr-2 font-inter font-normal leading-8 sm:leading-4 lg:leading-[25px] text-end`}> {tank.value_m3} </p>
+              <p className={` ${tank.textColor} w-[100px] text-2xl sm:text-base pr-2 font-inter font-normal leading-8 sm:leading-4 lg:leading-[25px] text-end`}> {Number(tank.value_m3).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} </p>
               <p className={`w-10 pl-3 text-start ${tank.textColor}`}>m³</p>
 
           </div>
@@ -155,7 +155,7 @@ export const MotorCard: React.FC<{ motor: MotorCardData }> = ({ motor }) => (
         <div className='flex flex-row'>
 
             <p className={`w-10 text-start ${motor.textColor}`}>PV</p>
-            <p className={`card_realtime_value_tank ${motor.textColor}`}> {motor.pv_L} </p>
+            <p className={`card_realtime_value_tank ${motor.textColor}`}> {Number(motor.pv_L).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} </p>
             <p className={`w-10 text-start ${motor.textColor}`}>L</p>
 
         </div>
@@ -163,7 +163,7 @@ export const MotorCard: React.FC<{ motor: MotorCardData }> = ({ motor }) => (
         <div className='flex flex-row '>
 
             <p className={`w-10 text-start ${motor.textColor}`}>SV</p>
-            <p className={`card_realtime_value_tank ${motor.textColor}`}> {motor.SP_total} </p>
+            <p className={`card_realtime_value_tank ${motor.textColor}`}> {Number(motor.SP_total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} </p>
             <p className={`w-10 text-start ${motor.textColor}`}>Total</p>
 
         </div>
@@ -171,7 +171,7 @@ export const MotorCard: React.FC<{ motor: MotorCardData }> = ({ motor }) => (
           <div className='flex flex-row '>
 
               <p className={`w-10 text-start ${motor.textColor}`}>PV</p>
-              <p className={`card_realtime_value_tank ${motor.textColor}`}> {motor.PV_total} </p>
+              <p className={`card_realtime_value_tank ${motor.textColor}`}> {Number(motor.PV_total).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} </p>
               <p className={`w-10 text-start ${motor.textColor}`}>Total</p>
 
           </div>
@@ -183,7 +183,7 @@ export const MotorCard: React.FC<{ motor: MotorCardData }> = ({ motor }) => (
       <div className='flex flex-row '>
 
           <p className={`w-10 text-start ${motor.textColor}`}>SP</p>
-          <p className={`card_realtime_value_tank ${motor.textColor}`}> {motor.Timer_SP}</p>
+          <p className={`card_realtime_value_tank ${motor.textColor}`}> {Number(motor.Timer_SP).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} </p>
           <p className={`w-10 text-start ${motor.textColor}`}>Min</p>
 
       </div>
@@ -192,7 +192,7 @@ export const MotorCard: React.FC<{ motor: MotorCardData }> = ({ motor }) => (
         <div className='flex flex-row'>
 
             <p className={`w-10 text-start ${motor.textColor}`}>PV</p>
-            <p className={`card_realtime_value_tank ${motor.textColor}`}> {motor.Timer_PV} </p>
+            <p className={`card_realtime_value_tank ${motor.textColor}`}> {Number(motor.Timer_PV).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} </p>
             <p className={`w-10 text-start ${motor.textColor}`}>Min</p>
 
         </div>

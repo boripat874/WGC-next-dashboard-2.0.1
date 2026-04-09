@@ -28,6 +28,7 @@ import {
 import useSWR from 'swr';
 import {format, set} from 'date-fns';
 import { fetcher } from "@/app/utils/fetcher";
+import Null from "tedious/lib/data-types/null";
 
 interface ModeCardData {
   title: string;
@@ -84,8 +85,37 @@ export default function AlkalineDashboard({ searchParams }: PropsType) {
   const [date_start, setDate_start] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [date_end, setDate_end] = useState(format(new Date(), 'yyyy-MM-dd'));
 
+
+  
   const {data:Acidrecieved} = useSWR(`/api/acidrecieved?period=${period}&date_start=${date_start}&date_end=${date_end}`, fetcher)
   const {data:Acidmixed} = useSWR(`/api/acidmixed?period=${period}&date_start=${date_start}&date_end=${date_end}`, fetcher)
+  const {data: Wgcacak} = useSWR(`/api/wgcacak`, fetcher)
+
+  useEffect(() => {
+
+    // if (Wgcacak) {
+    //   setWgcacak(Wgcacak);
+    // }
+
+    if (Wgcacak) {
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const lastUpdate = Number(Wgcacak.Lastupdate) || 0;
+    const diffSeconds = nowSeconds - lastUpdate;
+
+    if (diffSeconds > 60) {
+      // ระบุ Record<string, number> เพื่อให้ยอมรับการ index ด้วย string
+      const offlineData = Object.keys(Wgcacak).reduce((acc, key) => {
+        acc[key] = 0;
+        return acc;
+      }, {} as Record<string, any>) as Wgcacak; // cast กลับเป็น Wgcacak ตอนจบ
+      
+      setWgcacak(offlineData);
+    } else {
+      setWgcacak(Wgcacak);
+    }
+  }
+
+  }, [Wgcacak]);
 
   useEffect(() => {
 
@@ -182,6 +212,7 @@ export default function AlkalineDashboard({ searchParams }: PropsType) {
 
 
   const ModeCard: React.FC<{ mode: ModeCardData }> = ({ mode }) => (
+
     <div className={`${mode.bgColor} card_realtime_mode`}>
 
       <div className={`${mode.bgColor} ${mode.textColor} text-base lg:text-2xl`}>
@@ -219,6 +250,8 @@ export default function AlkalineDashboard({ searchParams }: PropsType) {
       </div>
     );
 
+    // console.log("wgcacak :: ",wgcacak)
+
   return (
     <>
 
@@ -230,6 +263,8 @@ export default function AlkalineDashboard({ searchParams }: PropsType) {
         textColor: `${ColorHeader}`,
 
       }} />
+
+      
 
       <h1 className="font-bold">Read time</h1>
 

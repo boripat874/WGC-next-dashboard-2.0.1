@@ -1,11 +1,15 @@
 export const checkMode = (mode:number,status:number) => {
+
+  console.log("checkMode :: ",mode,status)
+
+
     if (mode == 0) {
 
       return 'Auto Stop'
 
     }else if (mode == 1) {
 
-      if (status == 1) {
+      if (Number(status) == 1) {
         return 'Auto Start'
       }else{
         return 'Auto Stop'

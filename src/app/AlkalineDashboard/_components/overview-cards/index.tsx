@@ -107,9 +107,9 @@ export function OverviewCardsGroup() {
       <TankCard tank={{ 
         title: 'NaOH Fill TANK 1 (101H)', 
         subtitle:'TANK 1 (101H)', 
-        value_kg: wgcacak?.LT_PV_Kg_LT_101H?.toFixed(2) || '0.00', 
-        value_m3: wgcacak?.LT_PV_m3_LT_101H?.toFixed(2) || '0.00', 
-        value_mm: wgcacak?.AAA_LT_101H_Output?.toFixed(2) || '0.00', 
+        value_kg: wgcacak?.LT_PV_Kg_LT_101N?.toFixed(2) || '0.00', 
+        value_m3: wgcacak?.LT_PV_m3_LT_101N?.toFixed(2) || '0.00', 
+        value_mm: wgcacak?.AAA_LT_101N_Output?.toFixed(2) || '0.00', 
         bgColor: `${bgColorCard1}`, 
         textColor: `${ColorCard1}` 
         }} 
@@ -118,9 +118,9 @@ export function OverviewCardsGroup() {
       <TankCard tank={{ 
         title: 'NaOH Fill TANK 2 (102H)', 
         subtitle:'TANK 2 (102H)', 
-        value_kg: wgcacak?.LT_PV_Kg_LT_102H?.toFixed(2) || '0.00', 
-        value_m3: wgcacak?.LT_PV_m3_LT_102H?.toFixed(2) || '0.00', 
-        value_mm: wgcacak?.AAA_LT_102H_Output?.toFixed(2) || '0.00', 
+        value_kg: wgcacak?.LT_PV_Kg_LT_102N?.toFixed(2) || '0.00', 
+        value_m3: wgcacak?.LT_PV_m3_LT_102N?.toFixed(2) || '0.00', 
+        value_mm: wgcacak?.AAA_LT_102N_Output?.toFixed(2) || '0.00', 
         bgColor: `${bgColorCard2}`, 
         textColor: `${ColorCard2}`  
         }} 
@@ -130,8 +130,8 @@ export function OverviewCardsGroup() {
         title: 'NaOH Fill TANK 1 + TANK 2', 
         subtitle:'TANK 1 + TANK 2', 
         func: 'Summary',
-        value_kg: ((wgcacak?.LT_PV_Kg_LT_101H || 0) + (wgcacak?.LT_PV_Kg_LT_102H || 0)).toFixed(2) || '0.00', 
-        value_m3: ((wgcacak?.LT_PV_m3_LT_101H || 0) + (wgcacak?.LT_PV_m3_LT_102H || 0)).toFixed(2) || '0.00', 
+        value_kg: ((wgcacak?.LT_PV_Kg_LT_101N || 0) + (wgcacak?.LT_PV_Kg_LT_102N || 0)).toFixed(2) || '0.00', 
+        value_m3: ((wgcacak?.LT_PV_m3_LT_101N || 0) + (wgcacak?.LT_PV_m3_LT_102N || 0)).toFixed(2) || '0.00', 
         bgColor: `${bgColorCard3}`, 
         textColor: `${ColorCard3}` 
         }} 
@@ -140,9 +140,9 @@ export function OverviewCardsGroup() {
       <TankCard tank={{ 
         title: 'NaOH Mixer TANK 3 (301H)', 
         subtitle:'TANK 3 (301H)', 
-        value_kg: wgcacak?.LT_PV_Kg_LT_301H?.toFixed(2) || '0.00', 
-        value_m3: wgcacak?.LT_PV_m3_LT_301H?.toFixed(2) || '0.00', 
-        value_mm: wgcacak?.AAA_LT_301H_Output?.toFixed(2) || '0.00', 
+        value_kg: wgcacak?.LT_PV_Kg_LT_301N?.toFixed(2) || '0.00', 
+        value_m3: wgcacak?.LT_PV_m3_LT_301N?.toFixed(2) || '0.00', 
+        value_mm: wgcacak?.AAA_LT_301N_Output?.toFixed(2) || '0.00', 
         bgColor: `${bgColorCard4}`, 
         textColor: `${ColorCard4}` 
         }} 
@@ -151,9 +151,9 @@ export function OverviewCardsGroup() {
       <TankCard tank={{ 
         title: 'NaOH Store TANK 4 (401H)', 
         subtitle:'TANK 4 (401H)', 
-        value_kg: wgcacak?.LT_PV_Kg_LT_401H?.toFixed(2) || '0.00', 
-        value_m3: wgcacak?.LT_PV_m3_LT_401H?.toFixed(2) || '0.00', 
-        value_mm: wgcacak?.AAA_LT_401H_Output?.toFixed(2) || '0.00', 
+        value_kg: wgcacak?.LT_PV_Kg_LT_401N?.toFixed(2) || '0.00', 
+        value_m3: wgcacak?.LT_PV_m3_LT_401N?.toFixed(2) || '0.00', 
+        value_mm: wgcacak?.AAA_LT_401N_Output?.toFixed(2) || '0.00', 
         bgColor: `${bgColorCard5}`, 
         textColor: `${ColorCard5}` 
         

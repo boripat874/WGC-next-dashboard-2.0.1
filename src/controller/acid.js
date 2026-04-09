@@ -170,8 +170,6 @@ export const acidconsumed = async (c) => {
   }
 };
 
-
-
 // Report HCI Received
 export const reporthcirecieved = async (c) => {
 
@@ -729,7 +727,13 @@ export const reporthcimixed = async (c) => {
 
               // item.volume = (item.volume || 0) * System_Data_Density;
               item.ro_volume = (item.ro_volume || 0);
-              item.main_volume = (item.main_volume || 0) * System_Data_Density;
+
+              if(unit == 'kg'){
+
+                item.main_volume = (item.main_volume || 0) * System_Data_Density;
+              }else{
+                item.main_volume = (item.main_volume || 0) * System_Data_Density;
+              }
               item.volume_T3_Kg = (item.volume_T3_Kg || 0);
               item.volume_T3_m3 = (item.volume_T3_m3 || 0);
               item.volume_T3_mm = (item.volume_T3_mm || 0);
