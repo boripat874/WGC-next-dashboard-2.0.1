@@ -1,5 +1,6 @@
 import db from '../configKnexTable';
 import { format } from 'date-fns';
+export const dynamic = 'force-dynamic';
 
 // 1. Mark the function as async to use await
 export default async function Datatable() { 
