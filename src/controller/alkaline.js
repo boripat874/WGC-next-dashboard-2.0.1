@@ -637,36 +637,162 @@ export const reportnaohrecieved = async (c) => {
 
       if(aggregation == 'perday'){
 
-        dbdata = await db(dbTableRecieved)
-        .select(
-            // 1. Extract the date for grouping and aliasing it as 'date'
-            db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE) as date_time`),
-            // 2. Calculate the total volume for tank 1 for the day
-            db.raw(`SUM(${tableRecievedT1}) as tank1`),
-            db.raw(`SUM(${before_tableRecievedT1}) as before_tank1`),
-            // 3. Calculate the total volume for tank 2 for the day
-            db.raw(`SUM(${tableRecievedT2}) as tank2`),
-            db.raw(`SUM(${before_tableRecievedT2}) as before_tank2`)
-
-        )
-        .where('start_time', '>=', timestamp.startTimestamp)
-        .andWhere('start_time', '<', timestamp.endTimestamp)
-        .groupBy(db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE)`)) 
-        .orderBy('date_time', 'asc');
+        // dbdata = await db(dbTableRecieved)
         // .select(
         //     // 1. Extract the date for grouping and aliasing it as 'date'
         //     db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE) as date_time`),
-        //     `start_time`,
-        //     `end_time`,
-        //     `${tableRecievedT1} as tank1`,
-        //     `${tableRecievedT2} as tank2`,
+        //     // 2. Calculate the total volume for tank 1 for the day
+        //     db.raw(`SUM(${tableRecievedT1}) as tank1`),
+        //     db.raw(`SUM(${before_tableRecievedT1}) as before_tank1`),
+        //     // 3. Calculate the total volume for tank 2 for the day
+        //     db.raw(`SUM(${tableRecievedT2}) as tank2`),
+        //     db.raw(`SUM(${before_tableRecievedT2}) as before_tank2`)
+
         // )
         // .where('start_time', '>=', timestamp.startTimestamp)
         // .andWhere('start_time', '<', timestamp.endTimestamp)
+        // .groupBy(db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE)`)) 
         // .orderBy('date_time', 'asc')
-        // .then((rows) => {
+        dbdata = await db(dbTableRecieved)
+          .select(
+            // 1. Extract the date for grouping and aliasing it as 'date'
+            db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE) as date_time`),
+            `start_time`,
+            `end_time`,
+            `${tableRecievedT1} as tank1`,
+            `${tableRecievedT2} as tank2`,
+            `${before_tableRecievedT1} as before_tank1`,
+            `${before_tableRecievedT2} as before_tank2`,
+        )
+        .where('start_time', '>=', timestamp.startTimestamp)
+        .andWhere('start_time', '<', timestamp.endTimestamp)
+        .orderBy('date_time', 'asc')
+
+        .then(async(data_NaOH_Fill_day) => {
+
+          // console.log("data_NaOH_Fill_day -->",data_NaOH_Fill_day);
 
 
+          if(unit == 'kg'){
+
+            // 1. สร้าง Array ของ Promises จากการ Map ข้อมูล
+            const naoh_promises = data_NaOH_Fill_day.map(async (item) => {
+    
+                // กำหนดค่าเริ่มต้นสำหรับแต่ละรอบ
+                let System_Data_Fill = 0;
+                let System_Data_Density = 1;
+    
+                // แปลงเวลาให้ถูกต้อง (ใช้ new Date โดยตรง)
+                const baseDate = new Date(Date(item.start_time));
+                const startOfDay = new Date(baseDate).setHours(0, 0, 0, 0);
+                const endOfDay = new Date(baseDate).setHours(23, 59, 59, 999);
+    
+                const startTimeSec = Math.floor(startOfDay / 1000);
+                const endTimeSec = Math.floor(endOfDay / 1000);
+    
+                // console.log("Start Time (sec):", startTimeSec);
+                // console.log("End Time (sec):", endTimeSec);
+    
+                // Query ข้อมูลจากตาราง SD
+                const rows = await db('alkalirecievedSD')
+                    .select("Fill_Kg", "Density")
+                    .where('date_time', '>=', startTimeSec)
+                    .where('date_time', '<=', endTimeSec)
+                    .orderBy('date_time', 'desc')
+                    .first(); // เอาแถวล่าสุดแถวเดียว
+    
+                if (rows) {
+
+                  System_Data_Fill = rows.Fill_Kg || 0;
+                  System_Data_Density = rows.Density || 1;
+    
+                  item.tank1 = (item.tank1 || 0) * System_Data_Density;
+                  item.before_tank1 = (item.before_tank1 || 0) * System_Data_Density;
+
+                  item.tank2 = (item.tank2 || 0) * System_Data_Density;
+                  item.before_tank2 = (item.before_tank2 || 0) * System_Data_Density;
+                }
+    
+                // ส่งค่ากลับไปในแต่ละ item เพื่อนำไปบวกเพิ่มภายหลัง
+                return {
+                    ...item,
+                    System_Data_Fill,
+                    System_Data_Density
+                };
+            });
+
+            // 2. รอให้ Query ของทุก Item ทำงานเสร็จพร้อมกัน
+            const final_NaOH_items = await Promise.all(naoh_promises);
+
+            // 3. ใช้ .reduce() เพื่อรวมค่า Total ทั้งหมด (วิธีนี้ปลอดภัยและแม่นยำกว่า)
+            const NaOH_Total = final_NaOH_items.reduce((acc, curr) => {
+              
+                // 1. แปลง start_time ให้เป็น Date Object ที่ถูกต้อง
+                // ถ้า start_time เป็น Unix Timestamp (วินาที) อย่าลืมคูณ 1000
+                // const dateObj = new Date(curr.start_time * 1000);
+
+                // ปรับเวลาให้เป็น 00:00:00.000
+                // dateObj.setHours(0, 0, 0, 0); 
+
+                // จากนั้นใช้ค่านี้เป็น key หรือจะแปลงเป็น ISO String ก็ได้
+                let key = curr.date_time; 
+                // ผลลัพธ์จะเป็น "2026-04-10T00:00:00.000Z"
+
+                // 2. กำหนด Key ตามเงื่อนไข
+                // if (aggregation === 'thismonth') {
+                    // key = format(dateObj, 'yyyy-MM-dd'); // ผลรวมรายวัน
+                // } else if (aggregation === 'thisyear') {
+                //     key = format(dateObj, 'yyyy-MM');    // ผลรวมรายเดือน
+                // }else{ // aggregation === 'today'
+                    
+                //     key = format(dateObj, 'HH:mm'); 
+
+                // }
+
+                // 3. ถ้าไม่มี key (กรณีข้อมูลผิดพลาด) ให้ข้ามไป
+                if (!key) return acc;
+
+                // 4. สร้างโครงสร้าง Object ถ้ายังไม่มี Key นี้ใน acc
+                if (!acc[key]) {
+                    acc[key] = { 
+                        date_time: key, // เก็บ key ไว้ข้างในด้วยเพื่อให้เอาไปใช้ง่ายๆ
+                        tank1: 0, 
+                        before_tank1: 0, 
+                        tank2: 0, 
+                        before_tank2: 0 
+                    };
+                }
+
+                // 5. รวมค่าเข้า Key นั้นๆ
+                acc[key].tank1 += (Number(curr.tank1) || 0);
+                acc[key].before_tank1 += (Number(curr.before_tank1) || 0);
+                acc[key].tank2 += (Number(curr.tank2) || 0);
+                acc[key].before_tank2 += (Number(curr.before_tank2) || 0);
+
+                return acc;
+
+            }, {}); // เริ่มต้นด้วย {} เสมอสำหรับทุก aggregation
+
+            // console.log("NaOH_Total >>:",NaOH_Total);
+
+            // 2. แปลงเป็น Array และจัดการทศนิยมให้เหลือ 2-4 ตำแหน่ง (ถ้าต้องการ)
+            const NaOH_Total_Array = Object.values(NaOH_Total).map(item => ({
+                ...item,
+                tank1: Number(item.tank1.toFixed(2)),
+                before_tank1: Number(item.before_tank1.toFixed(3)),
+                tank2: Number(item.tank2.toFixed(2)),
+                before_tank2: Number(item.before_tank2.toFixed(6))
+            }));
+
+            // console.log("NaOH_Total_Array >>:",NaOH_Total_Array);
+
+            return NaOH_Total_Array
+
+          }else{
+            return data_NaOH_Fill_day
+          }
+
+        })
         // })
 
       }else{
@@ -679,13 +805,80 @@ export const reportnaohrecieved = async (c) => {
             `end_time`,
             `${tableRecievedT1} as tank1`,
             `${tableRecievedT2} as tank2`,
+            `${before_tableRecievedT1} as before_tank1`,
+            `${before_tableRecievedT2} as before_tank2`,
         )
         .where('start_time', '>=', timestamp.startTimestamp)
         .andWhere('start_time', '<', timestamp.endTimestamp)
-        .orderBy('date_time', 'asc');
+        .orderBy('date_time', 'asc')
+
+        .then(async(data_NaOH_Fill_day) => {
+
+          // console.log("data_NaOH_Fill_day -->",data_NaOH_Fill_day);
+
+          if(unit == 'kg'){
+
+            // 1. สร้าง Array ของ Promises จากการ Map ข้อมูล
+            const naoh_promises = data_NaOH_Fill_day.map(async (item) => {
+    
+                // กำหนดค่าเริ่มต้นสำหรับแต่ละรอบ
+                let System_Data_Fill = 0;
+                let System_Data_Density = 1;
+    
+                // แปลงเวลาให้ถูกต้อง (ใช้ new Date โดยตรง)
+                const baseDate = new Date(Date(item.start_time));
+                const startOfDay = new Date(baseDate).setHours(0, 0, 0, 0);
+                const endOfDay = new Date(baseDate).setHours(23, 59, 59, 999);
+    
+                const startTimeSec = Math.floor(startOfDay / 1000);
+                const endTimeSec = Math.floor(endOfDay / 1000);
+    
+                // console.log("Start Time (sec):", startTimeSec);
+                // console.log("End Time (sec):", endTimeSec);
+    
+                // Query ข้อมูลจากตาราง SD
+                const rows = await db('alkalirecievedSD')
+                    .select("Fill_Kg", "Density")
+                    .where('date_time', '>=', startTimeSec)
+                    .where('date_time', '<=', endTimeSec)
+                    .orderBy('date_time', 'desc')
+                    .first(); // เอาแถวล่าสุดแถวเดียว
+    
+                if (rows) {
+
+                  System_Data_Fill = rows.Fill_Kg || 0;
+                  System_Data_Density = rows.Density || 1;
+    
+                  item.tank1 = (item.tank1 || 0) * System_Data_Density;
+                  item.before_tank1 = (item.before_tank1 || 0) * System_Data_Density;
+
+                  item.tank2 = (item.tank2 || 0) * System_Data_Density;
+                  item.before_tank2 = (item.before_tank2 || 0) * System_Data_Density;
+                }
+    
+                // ส่งค่ากลับไปในแต่ละ item เพื่อนำไปบวกเพิ่มภายหลัง
+                return {
+                    ...item,
+                    System_Data_Fill,
+                    System_Data_Density
+                };
+            });
+
+            // 2. รอให้ Query ของทุก Item ทำงานเสร็จพร้อมกัน
+            const final_NaOH_items = await Promise.all(naoh_promises);
+
+            return final_NaOH_items
+
+          }else{
+
+            return data_NaOH_Fill_day
+
+          }
+
+        })
 
       }
-      // console.log(result);
+      // console.log("dbdata >>",dbdata);
 
       const promises = dbdata.map(async (item) => {
         // {
@@ -748,7 +941,7 @@ export const reportnaohrecieved = async (c) => {
           // console.log("unit kg >>",unit);
           // console.log("tank >>",tank);
 
-          item.date_time = format(item.date_time*1000, 'yyyy-MM-dd');
+          item.date_time = format(item.date_time, 'yyyy-MM-dd');
 
           if (aggregation == 'perday') {
 
@@ -771,10 +964,10 @@ export const reportnaohrecieved = async (c) => {
 
               item.Error_Fill = System_Data_Fill - (tank1 + tank2);
 
-              item.result_Before_Fill = ((before_tank1*System_Data_Density) + (before_tank2*System_Data_Density));
-              item.result_After_Fill = (((before_tank1*System_Data_Density) + (tank1*System_Data_Density)) + (before_tank2*System_Data_Density + (tank2*System_Data_Density)));
+              item.result_Before_Fill = ((before_tank1*1) + (before_tank2*1));
+              item.result_After_Fill = (((before_tank1*1) + (tank1*1)) + (before_tank2*1 + (tank2*1)));
 
-              item.result_Error_Fill = System_Data_Fill - ((tank1*System_Data_Density) + (tank2*System_Data_Density));
+              item.result_Error_Fill = System_Data_Fill - ((tank1*1) + (tank2*1));
 
 
             }else if (tank == "1"){
@@ -784,8 +977,8 @@ export const reportnaohrecieved = async (c) => {
 
               item.Error_Fill = 0;
 
-              item.result_Before_Fill = ((before_tank1*System_Data_Density));
-              item.result_After_Fill = (before_tank1*System_Data_Density + (tank1*System_Data_Density));
+              item.result_Before_Fill = ((before_tank1*1));
+              item.result_After_Fill = (before_tank1*1 + (tank1*1));
 
               item.result_Error_Fill = 0;
 
@@ -796,8 +989,8 @@ export const reportnaohrecieved = async (c) => {
 
               item.Error_Fill = 0;
 
-              item.result_Before_Fill = ((before_tank2*System_Data_Density));
-              item.result_After_Fill = (before_tank2*System_Data_Density + (tank2*System_Data_Density));
+              item.result_Before_Fill = ((before_tank2*1));
+              item.result_After_Fill = (before_tank2*1 + (tank2*1));
 
               item.result_Error_Fill = 0;
 

@@ -146,6 +146,9 @@ export const CardOverview = async (c) => {
                 before_T1_Kg: 0, before_T1_m3: 0, before_T2_Kg: 0, before_T2_m3: 0
             });
 
+
+
+
             //======================================================================= result NaOH_Transfer_day =======================================================================
             const NaOH_Transfer_day = data_NaOH_Transfer_day ? data_NaOH_Transfer_day.total_volume || 0 : 0;
 
@@ -410,6 +413,11 @@ export const chartFillOverview = async (c) => {
                 return acc;
 
             }, {}); // เริ่มต้นด้วย {} เสมอสำหรับทุก aggregation
+
+            // console.log("NaOH_Total >>:",NaOH_Total);
+
+            
+
 
             //======================================================================= result HCI_Fill_day =======================================================================
             const hci_promises = data_HCI_Fill_day.map(async (item) => {

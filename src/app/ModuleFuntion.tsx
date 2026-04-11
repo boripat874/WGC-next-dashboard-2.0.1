@@ -1,6 +1,6 @@
 export const checkMode = (mode:number,status:number) => {
 
-  console.log("checkMode :: ",mode,status)
+  // console.log("checkMode :: ",mode,status)
 
 
     if (mode == 0) {
