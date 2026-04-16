@@ -28,10 +28,11 @@ export default async function Datatable() {
           <thead>
             <tr className="text-left border-b">
               <th>ID</th>
+              <th>start_time</th>
               <th>plant</th>
               <th>volume</th>
-              <th>volume_T3_Kg</th>
-              <th>volume_T4_Kg</th>
+              {/* <th>volume_T3_Kg</th>
+              <th>volume_T4_Kg</th> */}
               {/* Add other columns like Tank or Status */}
             </tr>
           </thead>
@@ -42,8 +43,8 @@ export default async function Datatable() {
                 <td>{format(row.start_time*1000, 'yyyy-MM-dd HH:mm:ss')}</td>
                 <td>{row.plant}</td>
                 <td>{row.volume}</td>
-                <td>{row.volume_T3_Kg}</td>
-                <td>{row.volume_T4_Kg}</td>
+                {/* <td>{row.volume_T3_Kg}</td>
+                <td>{row.volume_T4_Kg}</td> */}
                 {/* <td>{row.volume_T1_Kg}</td>
                 <td>{row.volume_T1_Kg}</td> */}
 
