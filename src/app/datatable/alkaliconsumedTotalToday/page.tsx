@@ -13,6 +13,7 @@ export default async function Datatable() {
     .select('*')
     .orderBy('date_time', 'desc');
 
+  // console.log(result);
 
   return (
     <>
@@ -28,8 +29,6 @@ export default async function Datatable() {
             <tr className="text-left border-b">
               <th>ID</th>
               <th>date_time</th>
-              <th>plant</th>
-              {/* <th>volume</th> */}
               <th>volume_T3_Kg</th>
               <th>volume_T4_Kg</th>
               <th>volumepd1_total</th>
@@ -44,17 +43,12 @@ export default async function Datatable() {
               <tr key={index} className="border-b">
                 <td>{row.id}</td>
                 <td>{format(row.date_time*1000, 'yyyy-MM-dd HH:mm:ss')}</td>
-                <td>{row.plant}</td>
                 <td>{row.volume_T3_Kg}</td>
                 <td>{row.volume_T4_Kg}</td>
                 <td>{row.volumepd1_total}</td>
                 <td>{row.volumepd2_total}</td>
                 <td>{row.volumepd3_total}</td>
-                {/* <td>{row.volume_T1_Kg}</td>
-                <td>{row.volume_T1_Kg}</td> */}
 
-                {/* <td>{new Date(row.start_time).toLocaleString()}</td> */}
-                {/* <td>{row.amount}</td> */}
               </tr>
             ))}
             {/* {result} */}
