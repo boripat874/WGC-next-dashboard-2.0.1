@@ -82,7 +82,7 @@ export default function AlkalineDashboard() {
   const [ReceiveTank2, setReceiveTank2] = useState<ChartDataPoint[]>([]);
 
   const [wgcacak, setWgcacak] = useState<Wgcacak | null>(null);
-  const [period, setPeriod] = useState<string>("today");
+  const [period, setPeriod] = useState<string>("thisweek");
   const [date_start, setDate_start] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [date_end, setDate_end] = useState(format(new Date(), 'yyyy-MM-dd'));
 

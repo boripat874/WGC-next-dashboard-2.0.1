@@ -31,28 +31,39 @@ const SectionChooseDate: React.FC<SectionChooseDate> = ({
     const todayStr = format(today, "yyyy-MM-dd");
     
     if (val === "1day") {
+
       onChangeDate_start(todayStr);
       onChangeDate_end(todayStr);
-    } else if (val === "this7days") {
-      onChangeDate_end(todayStr);
-      const prevDate = subDays(today, 7);
-      onChangeDate_start(format(prevDate, "yyyy-MM-dd"));
+
+    } else if (val === "thisweek") {
+
+    onChangeDate_end(todayStr);
+    const prevDate = subDays(today, 7);
+    onChangeDate_start(format(prevDate, "yyyy-MM-dd"));
+
     } else if (val === "thismonth") {
-        onChangeDate_end(todayStr);
-        const start = startOfMonth(today);
-        onChangeDate_start(format(start, "yyyy-MM-dd"));
+
+      onChangeDate_end(todayStr);
+      const start = startOfMonth(today);
+      onChangeDate_start(format(start, "yyyy-MM-dd"));
+
     } else if (val === "3months") {
-        onChangeDate_end(todayStr);
-        const start = startOfMonth(subMonths(today, 3));
-        onChangeDate_start(format(start, "yyyy-MM-dd"));
+
+      onChangeDate_end(todayStr);
+      const start = startOfMonth(subMonths(today, 3));
+      onChangeDate_start(format(start, "yyyy-MM-dd"));
+
     } else if (val === "6months") {
-        onChangeDate_end(todayStr);
-        const start = startOfMonth(subMonths(today, 6));
-        onChangeDate_start(format(start, "yyyy-MM-dd"));
+
+      onChangeDate_end(todayStr);
+      const start = startOfMonth(subMonths(today, 6));
+      onChangeDate_start(format(start, "yyyy-MM-dd"));
+
     } else if (val === "thisyear") {
-        onChangeDate_end(todayStr);
-        const start = startOfYear(today);
-        onChangeDate_start(format(start, "yyyy-MM-dd"));
+
+      onChangeDate_end(todayStr);
+      const start = startOfYear(today);
+      onChangeDate_start(format(start, "yyyy-MM-dd"));
     }
   };
 
@@ -91,7 +102,7 @@ const SectionChooseDate: React.FC<SectionChooseDate> = ({
                 value={period}
                 onChange={(e) => handlePeriodChange(e.target.value)}
             >
-                <option value="this7days">Week</option>
+                <option value="thisweek">Week</option>
                 <option value="thismonth">Month</option>
                 <option value="thisyear">Year</option>
                 <option value="bydate">By Date</option>

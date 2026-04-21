@@ -33,7 +33,7 @@ const SectionChooseDate: React.FC<SectionChooseDate> = ({
     if (val === "1day") {
       onChangeDate_start(todayStr);
       onChangeDate_end(todayStr);
-    } else if (val === "this7days") {
+    } else if (val === "thisweek") {
       onChangeDate_end(todayStr);
       const prevDate = subDays(today, 7);
       onChangeDate_start(format(prevDate, "yyyy-MM-dd"));
@@ -91,7 +91,7 @@ const SectionChooseDate: React.FC<SectionChooseDate> = ({
                 value={period}
                 onChange={(e) => handlePeriodChange(e.target.value)}
             >
-                <option value="this7days">Week</option>
+                <option value="thisweek">Week</option>
                 <option value="thismonth">Month</option>
                 <option value="thisyear">Year</option>
                 <option value="bydate">By Date</option>
