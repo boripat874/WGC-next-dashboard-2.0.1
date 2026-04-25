@@ -9,7 +9,6 @@ import Logo from '../../../../public/images/report/logo-wgc.png';
 
 import jsPDF from 'jspdf';
 import { applyPlugin } from 'jspdf-autotable';
-import { rgba } from 'framer-motion';
 import {CheckPeriod,Aggregation,Unit} from '../reportPdf/funtionComponents';
 import { fetcher } from "@/app/utils/fetcher";
 
@@ -135,15 +134,13 @@ export default async function Forms1(
       return;
     });
 
-    if(tank === "12"){
-      tank = "1+2";
-    }
-
     const period_value = await CheckPeriod(period);
 
     // console.log("aggregation", aggregation);
 
     const aggregation_value = await Aggregation(aggregation);
+
+    console.log("unit_value >>",unit);
 
     const unit_value = await Unit(unit);
 
@@ -694,7 +691,7 @@ export default async function Forms1(
             "Time stop", 
             `Before Fill \n(${unit_value})`, 
             `After Fill \n(${unit_value})`, 
-            "Error Fill", 
+            `Error Fill \n(${unit_value})`, 
             `Before Fill \n(${unit_value})`, 
             `After Fill \n(${unit_value})`, 
             `Error Fill \n(${unit_value})`, 

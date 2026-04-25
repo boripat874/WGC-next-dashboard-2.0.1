@@ -316,7 +316,7 @@ export default async function Forms4(
 
             return (
                 <text x={x + width / 2} y={y} dy={-6} fill="rgba(0, 0, 0, 0.8)" textAnchor="middle" fontSize={14}>
-                    {value}
+                    {/* {value} */}
                 </text>
             );
         };
@@ -331,6 +331,7 @@ export default async function Forms4(
                   <Bar dataKey="pd1_total" fill={`#6FD195`} label={<CustomBarLabel />}></Bar>
                   <Bar dataKey="pd2_total" fill={`#63C1C1`} label={<CustomBarLabel />}></Bar>
                   <Bar dataKey="pd3_total" fill={`#D8A66B`} label={<CustomBarLabel />}></Bar>
+                  
                   <Tooltip />
                   
                   <Legend

@@ -38,7 +38,9 @@ export default function Page(props: Props) {
         if (!reportOpen) {
             const timer = setTimeout(() => {
 
-                Forms2(renderReport, "Alkaline", alkMixUnit, "3",  alkMixAgg, alkMixPeriod, alkMixStart, alkMixEnd)
+                // Forms2(renderReport, "Alkaline", alkMixUnit, "3",  alkMixAgg, alkMixPeriod, alkMixStart, alkMixEnd)
+                Forms2(renderReport, "Alkaline", "kg", "3", "perday", "1day", format(new Date(), 'yyyy-MM-dd'), format(new Date(), 'yyyy-MM-dd'))
+
 
             }, 1000); // ปิดหลังจาก 1 วินาที
 

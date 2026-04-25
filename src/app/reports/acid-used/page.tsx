@@ -38,7 +38,9 @@ export default function Page(props: Props) {
         if (!reportOpen) {
             const timer = setTimeout(() => {
 
-                Forms4(renderReport, "Acid", acidUsedPlant, acidUsedUnit, "4", acidUsedAgg, acidUsedPeriod, acidUsedStart, acidUsedEnd)
+                // Forms4(renderReport, "Acid", acidUsedPlant, acidUsedUnit, "4", acidUsedAgg, acidUsedPeriod, acidUsedStart, acidUsedEnd)
+                Forms4(renderReport, "Acid", "PD", "kg", "4", "perday", "1day", format(new Date(), 'yyyy-MM-dd'), format(new Date(), 'yyyy-MM-dd'))
+
 
             }, 1000); // ปิดหลังจาก 1 วินาที
 

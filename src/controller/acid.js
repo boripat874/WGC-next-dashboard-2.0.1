@@ -234,22 +234,181 @@ export const reporthcirecieved = async (c) => {
   
         if(aggregation == 'perday'){
   
-          dbdata = await db(dbTableRecieved)
-          .select(
+          // dbdata = await db(dbTableRecieved)
+          // .select(
+          //     // 1. Extract the date for grouping and aliasing it as 'date'
+          //     db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE) as date_time`),
+          //     // 2. Calculate the total volume for tank 1 for the day
+          //     db.raw(`SUM(${tableRecievedT1}) as tank1`),
+          //     db.raw(`SUM(${before_tableRecievedT1}) as before_tank1`),
+          //     // 3. Calculate the total volume for tank 2 for the day
+          //     db.raw(`SUM(${tableRecievedT2}) as tank2`),
+          //     db.raw(`SUM(${before_tableRecievedT2}) as before_tank2`)
+  
+          // )
+          // .where('start_time', '>=', timestamp.startTimestamp)
+          // .andWhere('start_time', '<', timestamp.endTimestamp)
+          // .groupBy(db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE)`)) 
+          // .orderBy('date_time', 'asc');
+
+            dbdata = await db(dbTableRecieved)
+            .select(
               // 1. Extract the date for grouping and aliasing it as 'date'
               db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE) as date_time`),
-              // 2. Calculate the total volume for tank 1 for the day
-              db.raw(`SUM(${tableRecievedT1}) as tank1`),
-              db.raw(`SUM(${before_tableRecievedT1}) as before_tank1`),
-              // 3. Calculate the total volume for tank 2 for the day
-              db.raw(`SUM(${tableRecievedT2}) as tank2`),
-              db.raw(`SUM(${before_tableRecievedT2}) as before_tank2`)
-  
+              `start_time`,
+              `end_time`,
+              `${tableRecievedT1} as tank1`,
+              `${tableRecievedT2} as tank2`,
+              `${before_tableRecievedT1} as before_tank1`,
+              `${before_tableRecievedT2} as before_tank2`,
           )
           .where('start_time', '>=', timestamp.startTimestamp)
           .andWhere('start_time', '<', timestamp.endTimestamp)
-          .groupBy(db.raw(`CAST(${sqlServerEpoch_recieved} AS DATE)`)) 
-          .orderBy('date_time', 'asc');
+          .orderBy('date_time', 'asc')
+          .then(async (data_HCI_Fill_day) => {
+
+            // if(unit == 'kg'){
+
+              // 1. สร้าง Array ของ Promises จากการ Map ข้อมูลแต่ละแถว
+              const hci_promises = data_HCI_Fill_day.map(async (item) => {
+                
+                let System_Data_Fill = 0;
+                let System_Data_Density = 1;
+
+                // แปลงเวลาให้ถูกต้อง (ใช้ new Date โดยตรง)
+                const baseDate = new Date(Date(item.start_time));
+                const startOfDay = new Date(baseDate).setHours(0, 0, 0, 0); 
+                const endOfDay = new Date(baseDate).setHours(23, 59, 59, 999);
+
+                const startTimeSec = Math.floor(startOfDay / 1000);
+                const endTimeSec = Math.floor(endOfDay / 1000);
+              
+                // Query ข้อมูลจากตาราง SD
+                const rows = await db(dbTablerecievedSD)
+                  .select("Fill_Kg", "Density")
+                  .where('date_time', '>=', startTimeSec)
+                  .where('date_time', '<=', endTimeSec)
+                  .orderBy('date_time', 'desc')
+                  .first(); // เอาแถวล่าสุดแถวเดียว
+
+                if (rows) {
+
+                  System_Data_Fill = rows.Fill_Kg || 0;
+                  System_Data_Density = rows.Density || 1;
+
+                  if(unit == 'm3'){
+
+                    item.tank1 = (item.tank1 || 0)+0.8;
+                    item.before_tank1 = (item.before_tank1 || 0)+0.8;
+
+                    item.tank2 = (item.tank2 || 0)+0.8;
+                    item.before_tank2 = (item.before_tank2 || 0)+0.8;
+
+                    item.result_tank1 = ((item.tank1 || 0) * System_Data_Density)+0.8;
+                    item.result_before_tank1 = ((item.before_tank1 || 0) * System_Data_Density)+0.8;
+
+                    item.result_tank2 = ((item.tank2 || 0) * System_Data_Density)+0.8;
+                    item.result_before_tank2 = ((item.before_tank2 || 0) * System_Data_Density)+0.8;
+
+                  }else if(unit == 'kg'){
+
+                    item.tank1 = (item.tank1 || 0);
+                    item.before_tank1 = (item.before_tank1 || 0);
+
+                    item.tank2 = (item.tank2 || 0);
+                    item.before_tank2 = (item.before_tank2 || 0);
+
+                    item.result_tank1 = (item.tank1 || 0) * System_Data_Density;
+                    item.result_before_tank1 = (item.before_tank1 || 0) * System_Data_Density;
+
+                    item.result_tank2 = (item.tank2 || 0) * System_Data_Density;
+                    item.result_before_tank2 = (item.before_tank2 || 0) * System_Data_Density;
+                  
+                  }
+                  else{
+
+                    item.tank1 = (item.tank1 || 0);
+                    item.before_tank1 = (item.before_tank1 || 0);
+
+                    item.tank2 = (item.tank2 || 0);
+                    item.before_tank2 = (item.before_tank2 || 0);
+
+                    item.result_tank1 = (item.tank1 || 0);
+                    item.result_before_tank1 = (item.before_tank1 || 0);
+
+                    item.result_tank2 = (item.tank2 || 0);
+                    item.result_before_tank2 = (item.before_tank2 || 0);
+                  }
+                }
+
+                return {
+                  ...item,
+                  System_Data_Fill,
+                  System_Data_Density
+                };
+
+              });
+
+              // 2. รอให้ Query ของทุก Item ทำงานเสร็จพร้อมกัน
+              const final_hci_items = await Promise.all(hci_promises);
+
+              const hci_Total = final_hci_items.reduce((total, item) => {
+
+                let key = item.date_time;
+
+                // 3. ถ้าไม่มี key (กรณีข้อมูลผิดพลาด) ให้ข้ามไป
+                if (!key) return acc;
+
+                if (!total[key]) {
+                  total[key] = {
+                    date_time: key,
+                    tank1: 0,
+                    before_tank1: 0,
+                    tank2: 0,
+                    before_tank2: 0,
+                    result_tank1: 0,
+                    result_before_tank1: 0,
+                    result_tank2: 0,
+                    result_before_tank2: 0
+                  };
+                }
+
+                total[key].tank1 += (Number(item.tank1) || 0);
+                total[key].before_tank1 += (Number(item.before_tank1) || 0);
+                total[key].tank2 += (Number(item.tank2) || 0);
+                total[key].before_tank2 += (Number(item.before_tank2) || 0);
+
+                total[key].result_tank1 += (Number(item.result_tank1) || 0);
+                total[key].result_before_tank1 += (Number(item.result_before_tank1) || 0);
+                total[key].result_tank2 += (Number(item.result_tank2) || 0);
+                total[key].result_before_tank2 += (Number(item.result_before_tank2) || 0);
+
+                return total;
+
+              }, {});
+
+              // 2. แปลงเป็น Array และจัดการทศนิยมให้เหลือ 2-4 ตำแหน่ง (ถ้าต้องการ)
+              const hci_Total_Array = Object.values(hci_Total).map(item => ({
+                ...item,
+                tank1: Number(item.tank1.toFixed(2)),
+                before_tank1: Number(item.before_tank1.toFixed(2)),
+                tank2: Number(item.tank2.toFixed(2)),
+                before_tank2: Number(item.before_tank2.toFixed(2)),
+                result_tank1: Number(item.result_tank1.toFixed(2)),
+                result_before_tank1: Number(item.result_before_tank1.toFixed(2)),
+                result_tank2: Number(item.result_tank2.toFixed(2)),
+                result_before_tank2: Number(item.result_before_tank2.toFixed(2)),
+              }));
+
+              return hci_Total_Array;
+
+            // }else{
+
+            //   return data_HCI_Fill_day;
+
+            // }
+
+          });
   
         }else{
   
@@ -264,7 +423,104 @@ export const reporthcirecieved = async (c) => {
           )
           .where('start_time', '>=', timestamp.startTimestamp)
           .andWhere('start_time', '<', timestamp.endTimestamp)
-          .orderBy('date_time', 'asc');
+          .orderBy('date_time', 'asc')
+          .then(async(data_HCI_Fill) => {
+  
+            // if(unit == 'kg'){
+
+              // 1. สร้าง Array ของ Promises จากการ Map ข้อมูล
+              const hci_promises = data_HCI_Fill.map(async (item) => {
+
+                let System_Data_Fill = 0;
+                let System_Data_Density = 1;
+
+                // แปลงเวลาให้ถูกต้อง (ใช้ new Date โดยตรง)
+                const baseDate = new Date(Date(item.start_time));
+                const startOfDay = new Date(baseDate).setHours(0, 0, 0, 0); 
+                const endOfDay = new Date(baseDate).setHours(23, 59, 59, 999);
+
+                const startTimeSec = Math.floor(startOfDay / 1000);
+                const endTimeSec = Math.floor(endOfDay / 1000);
+
+                const rows = await db(dbTablerecievedSD)
+                  .select("Fill_Kg", "Density")
+                  .where('date_time', '>=', startTimeSec)
+                  .where('date_time', '<=', endTimeSec)
+                  .orderBy('date_time', 'desc')
+                  .first(); // เอาแถวล่าสุดแถวเดียว
+
+                if (rows) {
+
+                  System_Data_Fill = rows.Fill_Kg || 0;
+                  System_Data_Density = rows.Density || 1;
+
+                  if(unit == 'm3'){
+
+                    item.tank1 = (item.tank1 || 0)+0.8;
+                    item.before_tank1 = (item.before_tank1 || 0)+0.8;
+
+                    item.tank2 = (item.tank2 || 0)+0.8;
+                    item.before_tank2 = (item.before_tank2 || 0)+0.8;
+
+                    item.result_tank1 = ((item.tank1 || 0) * System_Data_Density)+0.8;
+                    item.result_before_tank1 = ((item.before_tank1 || 0) * System_Data_Density)+0.8;
+
+                    item.result_tank2 = ((item.tank2 || 0) * System_Data_Density)+0.8;
+                    item.result_before_tank2 = ((item.before_tank2 || 0) * System_Data_Density)+0.8;
+
+                  }else if(unit == 'kg'){
+
+                    item.tank1 = (item.tank1 || 0);
+                    item.before_tank1 = (item.before_tank1 || 0);
+
+                    item.tank2 = (item.tank2 || 0);
+                    item.before_tank2 = (item.before_tank2 || 0);
+
+                    item.result_tank1 = (item.tank1 || 0) * System_Data_Density;
+                    item.result_before_tank1 = (item.before_tank1 || 0) * System_Data_Density;
+
+                    item.result_tank2 = (item.tank2 || 0) * System_Data_Density;
+                    item.result_before_tank2 = (item.before_tank2 || 0) * System_Data_Density;
+                  
+                  }
+                  else{
+
+                    item.tank1 = (item.tank1 || 0);
+                    item.before_tank1 = (item.before_tank1 || 0);
+
+                    item.tank2 = (item.tank2 || 0);
+                    item.before_tank2 = (item.before_tank2 || 0);
+
+                    item.result_tank1 = (item.tank1 || 0);
+                    item.result_before_tank1 = (item.before_tank1 || 0);
+
+                    item.result_tank2 = (item.tank2 || 0);
+                    item.result_before_tank2 = (item.before_tank2 || 0);
+                  }
+
+                }
+
+                return {
+                  ...item,
+                  System_Data_Fill,
+                  System_Data_Density
+                };
+
+              });
+
+              //2. รอให้ Query ของทุก Item ทำงานเสร็จพร้อมกัน
+              const final_hci_items = await Promise.all(hci_promises);
+
+              return final_hci_items;
+
+            // }else{
+
+            //   return data_HCI_Fill;
+
+            // }
+  
+          })
+                  
   
         }
         // console.log(result);
@@ -326,6 +582,12 @@ export const reporthcirecieved = async (c) => {
   
             const tank1 = Number(item.tank1) || 0;
             const tank2 = Number(item.tank2) || 0;
+
+            const result_tank1 = Number(item.result_tank1) || 0;
+            const result_tank2 = Number(item.result_tank2) || 0;
+            
+            const result_before_tank1 = Number(item.result_before_tank1) || 0;
+            const result_before_tank2 = Number(item.result_before_tank2) || 0;
   
             // console.log("unit kg >>",unit);
             // console.log("tank >>",tank);
@@ -342,23 +604,19 @@ export const reporthcirecieved = async (c) => {
               item.end_time = format(item.end_time*1000, 'HH:mm');
             }
   
-  
             if(unit == 'kg'){
   
-  
               if (tank == "12") {
-  
-  
   
                 item.Before_Fill = (before_tank1 + before_tank2);
                 item.After_Fill = ((before_tank1 + tank1) + (before_tank2 + tank2));
   
                 item.Error_Fill = System_Data_Fill - (tank1 + tank2);
   
-                item.result_Before_Fill = ((before_tank1*System_Data_Density) + (before_tank2*System_Data_Density));
-                item.result_After_Fill = (((before_tank1*System_Data_Density) + (tank1*System_Data_Density)) + (before_tank2*System_Data_Density + (tank2*System_Data_Density)));
-  
-                item.result_Error_Fill = System_Data_Fill - ((tank1*System_Data_Density) + (tank2*System_Data_Density));
+                item.result_Before_Fill = ((result_before_tank1) + (result_before_tank2));
+                item.result_After_Fill = (((result_before_tank1) + (result_tank1)) + (result_before_tank2 + (result_tank2)));
+
+                item.result_Error_Fill = System_Data_Fill - ((result_tank1) + (result_tank2));
   
               }else if (tank == "1"){
   
@@ -367,9 +625,9 @@ export const reporthcirecieved = async (c) => {
   
                 item.Error_Fill = 0;
   
-                item.result_Before_Fill = ((before_tank1*System_Data_Density));
-                item.result_After_Fill = (before_tank1*System_Data_Density + (tank1*System_Data_Density));
-  
+                item.result_Before_Fill = ((result_before_tank1));
+                item.result_After_Fill = (result_before_tank1 + (result_tank1));
+
                 item.result_Error_Fill = 0;
   
               }else if (tank == "2"){
@@ -379,8 +637,8 @@ export const reporthcirecieved = async (c) => {
   
                 item.Error_Fill = 0;
   
-                item.result_Before_Fill = ((before_tank2*System_Data_Density));
-                item.result_After_Fill = (before_tank2*System_Data_Density + (tank2*System_Data_Density));
+                item.result_Before_Fill = ((result_before_tank2));
+                item.result_After_Fill = (result_before_tank2 + (result_tank2));
   
                 item.result_Error_Fill = 0;
   
@@ -396,8 +654,51 @@ export const reporthcirecieved = async (c) => {
                 // item.Error_Fill = System_Data_Fill - ((tank1) + (tank2));
                 item.Error_Fill = 0;
   
-                item.result_Before_Fill = ((before_tank1) + (before_tank2));
-                item.result_After_Fill = (((before_tank1) + (tank1)) + ((before_tank2) + (tank2)));
+                item.result_Before_Fill = ((result_before_tank1) + (result_before_tank2));
+                item.result_After_Fill = (((result_before_tank1) + (result_tank1)) + ((result_before_tank2) + (result_tank2)));
+
+                // item.result_Error_Fill = System_Data_Fill - ((tank1) + (tank2));
+                item.result_Error_Fill = 0;
+                
+              }else if (tank == "1"){
+  
+                item.Before_Fill = ((before_tank1));
+                item.After_Fill = (((before_tank1) + (tank1)));
+  
+                item.Error_Fill = 0;
+  
+                item.result_Before_Fill = ((result_before_tank1));
+                item.result_After_Fill = (((result_before_tank1) + (result_tank1)));
+  
+                item.result_Error_Fill = 0;
+                
+              }else if (tank == "2"){
+  
+                item.Before_Fill = ((before_tank2));
+                item.After_Fill = ((before_tank2) + (tank2));
+  
+                item.Error_Fill = 0;
+  
+                item.result_Before_Fill = ((result_before_tank2));
+                item.result_After_Fill = ((result_before_tank2) + (result_tank2));
+  
+                item.result_Error_Fill = 0;
+                
+              }
+  
+  
+            }else if (unit == 'm3'){
+  
+              if (tank == "12") {
+  
+                item.Before_Fill = ((before_tank1) + (before_tank2));
+                item.After_Fill = (((before_tank1) + (tank1)) + ((before_tank2) + (tank2)));
+  
+                // item.Error_Fill = System_Data_Fill - ((tank1) + (tank2));
+                item.Error_Fill = 0;
+  
+                item.result_Before_Fill = ((result_before_tank1) + (result_before_tank2));
+                item.result_After_Fill = (((result_before_tank1) + (result_tank1)) + ((result_before_tank2) + (result_tank2)));
   
                 // item.result_Error_Fill = System_Data_Fill - ((tank1) + (tank2));
                 item.result_Error_Fill = 0;
@@ -409,8 +710,8 @@ export const reporthcirecieved = async (c) => {
   
                 item.Error_Fill = 0;
   
-                item.result_Before_Fill = ((before_tank1));
-                item.result_After_Fill = (((before_tank1) + (tank1)));
+                item.result_Before_Fill = ((result_before_tank1));
+              item.result_After_Fill = (((result_before_tank1) + (result_tank1)));
   
                 item.result_Error_Fill = 0;
                 
@@ -421,51 +722,8 @@ export const reporthcirecieved = async (c) => {
   
                 item.Error_Fill = 0;
   
-                item.result_Before_Fill = ((before_tank2));
-                item.result_After_Fill = ((before_tank2) + (tank2));
-  
-                item.result_Error_Fill = 0;
-                
-              }
-  
-  
-            }else if (unit == 'm3'){
-  
-              if (tank == "12") {
-  
-                item.Before_Fill = ((before_tank1+0.8) + (before_tank2+0.8));
-                item.After_Fill = (((before_tank1+0.8) + (tank1+0.8)) + ((before_tank2+0.8) + (tank2+0.8)));
-  
-                // item.Error_Fill = System_Data_Fill - ((tank1+0.8) + (tank2+0.8));
-                item.Error_Fill = 0;
-  
-                item.result_Before_Fill = ((before_tank1+0.8) + (before_tank2+0.8));
-                item.result_After_Fill = (((before_tank1+0.8) + (tank1+0.8)) + ((before_tank2+0.8) + (tank2+0.8)));
-  
-                // item.result_Error_Fill = System_Data_Fill - ((tank1+0.8) + (tank2+0.8));
-                item.result_Error_Fill = 0;
-                
-              }else if (tank == "1"){
-  
-                item.Before_Fill = ((before_tank1+0.8));
-                item.After_Fill = (((before_tank1+0.8) + (tank1+0.8)));
-  
-                item.Error_Fill = 0;
-  
-                item.result_Before_Fill = ((before_tank1+0.8));
-                item.result_After_Fill = (((before_tank1+0.8) + (tank1+0.8)));
-  
-                item.result_Error_Fill = 0;
-                
-              }else if (tank == "2"){
-  
-                item.Before_Fill = ((before_tank2+0.8));
-                item.After_Fill = ((before_tank2+0.8) + (tank2+0.8));
-  
-                item.Error_Fill = 0;
-  
-                item.result_Before_Fill = ((before_tank2+0.8));
-                item.result_After_Fill = ((before_tank2+0.8) + (tank2+0.8));
+                item.result_Before_Fill = ((result_before_tank2));
+                item.result_After_Fill = ((result_before_tank2) + (result_tank2));
   
                 item.result_Error_Fill = 0;
                 
@@ -617,7 +875,7 @@ export const reporthcimixed = async (c) => {
               item.ro_volume = (item.ro_volume || 0);
               item.main_volume = (item.main_volume || 0) * System_Data_Density;
               item.volume_T3_Kg = (item.volume_T3_Kg || 0);
-              item.volume_T3_m3 = (item.volume_T3_m3 || 0);
+              item.volume_T3_m3 = (Number(item.volume_T3_m3) || 0)+0.8;
               item.volume_T3_mm = (item.volume_T3_mm || 0);
 
             }
@@ -674,7 +932,7 @@ export const reporthcimixed = async (c) => {
 
           }, {});
 
-        // 3. แปลงจาก Object เป็น Array เพื่อให้ได้ผลลัพธ์ตามที่ต้องการ
+          // 3. แปลงจาก Object เป็น Array เพื่อให้ได้ผลลัพธ์ตามที่ต้องการ
           const HCI_Total_day = Object.values(groupedData);
 
           return HCI_Total_day;
@@ -713,17 +971,17 @@ export const reporthcimixed = async (c) => {
             const endTimeSec = Math.floor(endOfDay / 1000);
 
             // Query ข้อมูลจากตาราง SD
-            const rows = await db(dbTablerecievedSD)
-            .select("Fill_Kg", "Density")
-            .where('date_time', '>=', startTimeSec)
-            .where('date_time', '<=', endTimeSec)
-            .orderBy('date_time', 'desc')
-            .first(); // เอาแถวล่าสุดแถวเดียว
+            // const rows = await db(dbTablerecievedSD)
+            // .select("Fill_Kg", "Density")
+            // .where('date_time', '>=', startTimeSec)
+            // .where('date_time', '<=', endTimeSec)
+            // .orderBy('date_time', 'desc')
+            // .first(); // เอาแถวล่าสุดแถวเดียว
 
-            if (rows) {
+            // if (rows) {
 
-              System_Data_Fill = rows.Fill_Kg || 0;
-              System_Data_Density = rows.Density || 1;
+            //   System_Data_Fill = rows.Fill_Kg || 0;
+            //   System_Data_Density = rows.Density || 1;
 
               // item.volume = (item.volume || 0) * System_Data_Density;
               item.ro_volume = (item.ro_volume || 0);
@@ -731,20 +989,21 @@ export const reporthcimixed = async (c) => {
               if(unit == 'kg'){
 
                 item.main_volume = (item.main_volume || 0) * System_Data_Density;
+
               }else{
-                item.main_volume = (item.main_volume || 0) * System_Data_Density;
+                item.main_volume = (item.main_volume || 0);
               }
               item.volume_T3_Kg = (item.volume_T3_Kg || 0);
-              item.volume_T3_m3 = (item.volume_T3_m3 || 0);
+              item.volume_T3_m3 = Number((item.volume_T3_m3 || 0))+0.8;
               item.volume_T3_mm = (item.volume_T3_mm || 0);
 
-            }
+            // }
 
             // ส่งค่ากลับไปในแต่ละ item เพื่อนำไปบวกเพิ่มภายหลัง
             return {
               ...item,
-              System_Data_Fill,
-              System_Data_Density
+              // System_Data_Fill,
+              // System_Data_Density
             };
           });
 
@@ -757,8 +1016,8 @@ export const reporthcimixed = async (c) => {
 
       const promises = dbdata.map(async (item) => {
 
-        let System_Data_Fill = 0; 
-        let System_Data_Density = 1;
+        // let System_Data_Fill = 0; 
+        // let System_Data_Density = 1;
 
         // const sqlServerEpoch_SD = "FORMAT(DATEADD(SECOND, [date_time], '1970-01-01'), 'yyyy-MM-dd')";
         
@@ -769,15 +1028,15 @@ export const reporthcimixed = async (c) => {
         //   .whereRaw(`CAST(${sqlServerEpoch_SD} AS DATE) = ?`, [item.date_time])
         //   .then((rows) => {
 
-            if(rows.length > 0){
+            // if(rows.length > 0){
 
-              System_Data_Fill = rows[0].Fill_Kg || 0;
-              System_Data_Density = rows[0].Density || 1;
+            //   System_Data_Fill = rows[0].Fill_Kg || 0;
+            //   System_Data_Density = rows[0].Density || 1;
 
-            }
+            // }
 
-            item.System_Data_Fill = System_Data_Fill;
-            item.System_Data_Density = System_Data_Density;
+            // item.System_Data_Fill = System_Data_Fill;
+            // item.System_Data_Density = System_Data_Density;
 
             const ro_volume = Number(item.ro_volume) || 0;
             const main_volume = Number(item.main_volume) || 0;
@@ -797,10 +1056,10 @@ export const reporthcimixed = async (c) => {
               item.end_time = format(item.end_time*1000, 'HH:mm');
             }
 
-            if(unit == 'kg'){
+            if(unit == 'kg' || unit == 'Liter'){
 
               const result_ro_value = (ro_volume);
-              const result_main_value = (main_volume)*System_Data_Density;
+              const result_main_value = (main_volume);
 
               item.ro_value = result_ro_value;
               item.main_value = result_main_value;
@@ -817,18 +1076,7 @@ export const reporthcimixed = async (c) => {
               item.main_value = result_main_value;
               item.total = result_ro_value + result_main_value;
               item.error_value = (result_ro_value + result_main_value) - volume_T3_m3;
-              item.tank3 = volume_T3_m3+0.8;
-
-            }else if (unit == 'Liter'){
-
-              const result_ro_value = (ro_volume);
-              const result_main_value = (main_volume);
-
-              item.ro_value = result_ro_value;
-              item.main_value = result_main_value;
-              item.total = result_ro_value + result_main_value;
-              item.error_value = (result_ro_value + result_main_value) - volume_T3_Kg;
-              item.tank3 = volume_T3_Kg;
+              item.tank3 = volume_T3_m3;
 
             }
 
@@ -899,6 +1147,7 @@ export const reporthciconsumed = async (c) => {
     const dbTablerecievedSD = 'acidrecievedSD';
     const dbTableRecieved = 'acidrecieved';
     const dbTableTotal = 'acidconsumedtotal';
+    const dbTableStore = 'acidstore';
 
     try {
       // ใส่ logic การทำงานของคุณตรงนี้
@@ -999,25 +1248,38 @@ export const reporthciconsumed = async (c) => {
         const nextStartSec = Math.floor(nextStart.getTime() / 1000);
         const nextEndSec = Math.floor(nextEnd.getTime() / 1000);
 
+        // 1. หาวันเมื่อวาน (ถอยหลังไป 1 วัน) เริ่มต้นที่ 00:00:00
+        const prevStart = new Date(baseDate);
+        prevStart.setDate(baseDate.getDate() - 1); // เปลี่ยนจาก +1 เป็น -1
+        prevStart.setHours(0, 0, 0, 0);
+
+        // 2. หาวันสิ้นสุดของเมื่อวาน (ก็คือจุดเริ่มต้นของวัน baseDate ที่ 00:00:00)
+        const prevEnd = new Date(baseDate);
+        prevEnd.setHours(0, 0, 0, 0);
+
+        // แปลงเป็น Seconds (Unix Timestamp)
+        const prevStartSec = Math.floor(prevStart.getTime() / 1000);
+        const prevEndSec = Math.floor(prevEnd.getTime() / 1000);
+
         // console.log("beforeStart -->",item.date_time);
         // console.log("beforeEnd -->",item.date_time);
 
         // console.log("Query Start:", nextStartSec, nextStart);
         // console.log("Query End:  ", nextEndSec, nextEnd);
 
-        const sqlServerEpoch_Recieved = "FORMAT(DATEADD(SECOND, [start_time], '1970-01-01'), 'yyyy-MM-dd')";
+        const sqlServerEpoch_Store = "FORMAT(DATEADD(SECOND, [start_time], '1970-01-01'), 'yyyy-MM-dd')";
 
-        const dbdataRecieved = await db(dbTableRecieved)
+        const dbdataStore = await db(dbTableStore)
         .select(
             // 1. Extract the date for grouping and aliasing it as 'date'
-            db.raw(`CAST(${sqlServerEpoch_Recieved} AS DATE) as date_time`),
+            db.raw(`CAST(${sqlServerEpoch_Store} AS DATE) as date_time`),
             // 2. Calculate the total volume for tank 1 for the day
-            db.raw(`SUM(${tableRecievedT1}) as tank1`),
+            db.raw(`SUM(volume_Kg) as volume_Kg`),
             // 3. Calculate the total volume for tank 2 for the day
-            db.raw(`SUM(${tableRecievedT2}) as tank2`),
+            db.raw(`SUM(volume_m3) as volume_m3`),
         )
-        .whereRaw(`CAST(${sqlServerEpoch_Recieved} AS DATE) = ?`, [item.date_time])
-        .groupBy(db.raw(`CAST(${sqlServerEpoch_Recieved} AS DATE)`)) 
+        .whereRaw(`CAST(${sqlServerEpoch_Store} AS DATE) = ?`, [item.date_time])
+        .groupBy(db.raw(`CAST(${sqlServerEpoch_Store} AS DATE)`)) 
         .orderBy('date_time', 'asc');
 
 
@@ -1045,32 +1307,37 @@ export const reporthciconsumed = async (c) => {
         .groupBy(db.raw(`CAST(${sqlServerEpoch_total} AS DATE)`)) 
         .orderBy('date_time', 'asc');
 
+        // --- เพิ่มเงื่อนไขตรงนี้ ---
+        if (dbtableTotal.length === 0) {
+            return null; // หรือ return undefined เพื่อบอกว่าไม่เอา item นี้
+        }
+
         
         // console.log("item.date_time -->",item.date_time);
-        const sqlServerEpoch_SD = "FORMAT(DATEADD(SECOND, [date_time], '1970-01-01'), 'yyyy-MM-dd')";
+        // const sqlServerEpoch_SD = "FORMAT(DATEADD(SECOND, [date_time], '1970-01-01'), 'yyyy-MM-dd')";
         
-        await db(dbTablerecievedSD)
+        // await db(dbTablerecievedSD)
 
-          .select("*", db.raw(`CAST(${sqlServerEpoch_SD} AS DATE) as created_date`))
-          // Use .whereRaw and repeat the logic, passing the value as a binding (?)
-          .whereRaw(`CAST(${sqlServerEpoch_SD} AS DATE) = ?`, [item.date_time])
+        //   .select("*", db.raw(`CAST(${sqlServerEpoch_SD} AS DATE) as created_date`))
+        //   // Use .whereRaw and repeat the logic, passing the value as a binding (?)
+        //   .whereRaw(`CAST(${sqlServerEpoch_SD} AS DATE) = ?`, [item.date_time])
 
-          .then(async (rows) => {
+        //   .then(async (rows) => {
             
-            if(rows.length > 0){
+        //     if(rows.length > 0){
 
-              System_Data_Fill = rows[0].Fill_Kg || 0;
-              System_Data_Density = rows[0].Density || 1;
+        //       System_Data_Fill = rows[0].Fill_Kg || 0;
+        //       System_Data_Density = rows[0].Density || 1;
 
-            }
+        //     }
 
-            item.System_Data_Fill = System_Data_Fill;
-            item.System_Data_Density = System_Data_Density;
+        //     item.System_Data_Fill = System_Data_Fill;
+        //     item.System_Data_Density = System_Data_Density;
 
             let volumepd1_recieved = 0;
             let volumepd2_recieved = 0;    
             
-            let volumeRecieved_total = 0;
+            let volumeStore_total = 0;
 
             let pd1_use_total = 0;
             let pd2_use_total = 0;
@@ -1095,35 +1362,37 @@ export const reporthciconsumed = async (c) => {
               
               // volumepd1_recieved = Number(dbdataRecieved[0]?.tank1)*System_Data_Density || 0;
               // volumepd2_recieved = Number(dbdataRecieved[0]?.tank2)*System_Data_Density || 0; 
-              volumepd1_recieved = Number(dbdataRecieved[0]?.tank1)*1 || 0;
-              volumepd2_recieved = Number(dbdataRecieved[0]?.tank2)*1 || 0; 
+              // volumepd1_recieved = Number(dbdataRecieved[0]?.tank1) || 0;
+              // volumepd2_recieved = Number(dbdataRecieved[0]?.tank2) || 0; 
               
-              volumeRecieved_total = volumepd1_recieved + volumepd2_recieved; 
+              // volumeRecieved_total = volumepd1_recieved + volumepd2_recieved; 
+              volumeStore_total = Number(dbdataStore[0]?.volume_Kg || 0); 
 
               // pd1_use_total = Number(item.pd1)*System_Data_Density || 0;
               // pd2_use_total = Number(item.pd2)*System_Data_Density || 0;
               // pd3_use_total = Number(item.pd3)*System_Data_Density || 0;
-              pd1_use_total = Number(item.pd1)*1 || 0;
-              pd2_use_total = Number(item.pd2)*1 || 0;
-              pd3_use_total = Number(item.pd3)*1 || 0;
+              pd1_use_total = Number(item.pd1) || 0;
+              pd2_use_total = Number(item.pd2) || 0;
+              pd3_use_total = Number(item.pd3) || 0;
               
               use_total = pd1_use_total + pd2_use_total + pd3_use_total;
 
               // item.remaining_tank3 = Number(dbtableTotal[0]?.volume_T3_Kg*System_Data_Density) || 0;
               // item.remaining_tank4 = Number(dbtableTotal[0]?.volume_T4_Kg*System_Data_Density) || 0;
-              item.remaining_tank3 = Number(dbtableTotal[0]?.volume_T3_Kg*1) || 0;
-              item.remaining_tank4 = Number(dbtableTotal[0]?.volume_T4_Kg*1) || 0;
+              item.remaining_tank3 = Number(dbtableTotal[0]?.volume_T3_Kg) || 0;
+              item.remaining_tank4 = Number(dbtableTotal[0]?.volume_T4_Kg) || 0;
 
               item.total_use = use_total;
 
-              item.error = volumeRecieved_total - use_total;
+              item.error = volumeStore_total - use_total;
               
             }else if(unit == 'm3'){
               
-              volumepd1_recieved = Number(dbdataRecieved[0]?.tank1) || 0;
-              volumepd2_recieved = Number(dbdataRecieved[0]?.tank2) || 0; 
+              // volumepd1_recieved = Number(dbdataRecieved[0]?.tank1) || 0;
+              // volumepd2_recieved = Number(dbdataRecieved[0]?.tank2) || 0; 
               
-              volumeRecieved_total = volumepd1_recieved + volumepd2_recieved; 
+              // volumeRecieved_total = volumepd1_recieved + volumepd2_recieved; 
+              volumeStore_total = Number(dbdataStore[0]?.volume_m3 || 0); 
 
               pd1_use_total = Number(item.pd1 * 0.001) || 0;
               pd2_use_total = Number(item.pd2 * 0.001) || 0;
@@ -1136,15 +1405,16 @@ export const reporthciconsumed = async (c) => {
 
               item.total_use = use_total;
 
-              item.error = volumeRecieved_total - use_total;
+              item.error = volumeStore_total - use_total;
 
               
             }else if (unit == 'Liter'){
               
-              volumepd1_recieved = Number(dbdataRecieved[0]?.tank1) || 0;
-              volumepd2_recieved = Number(dbdataRecieved[0]?.tank2) || 0; 
+              // volumepd1_recieved = Number(dbdataRecieved[0]?.tank1) || 0;
+              // volumepd2_recieved = Number(dbdataRecieved[0]?.tank2) || 0; 
               
-              volumeRecieved_total = volumepd1_recieved + volumepd2_recieved; 
+              // volumeRecieved_total = volumepd1_recieved + volumepd2_recieved; 
+              volumeStore_total = Number(dbdataStore[0]?.volume_Kg || 0); 
 
               pd1_use_total = Number(item.pd1) || 0;
               pd2_use_total = Number(item.pd2) || 0;
@@ -1157,7 +1427,7 @@ export const reporthciconsumed = async (c) => {
 
               item.total_use = use_total;
 
-              item.error = volumeRecieved_total - use_total;
+              item.error = volumeStore_total - use_total;
               
             }
 
@@ -1173,8 +1443,8 @@ export const reporthciconsumed = async (c) => {
             item.pd2_ro = pd2_use_total * 0.9;
             item.pd3_ro = pd3_use_total * 0.9;
 
-          }
-        )
+        //   }
+        // )
 
         return {
           ...item
@@ -1184,12 +1454,15 @@ export const reporthciconsumed = async (c) => {
 
       const result = await Promise.all(promises);
 
+      // กรองเอาเฉพาะข้อมูลที่ไม่เป็น null (ตัวที่ dbtableTotal.length > 0)
+      const finalData = result.filter(item => item !== null);
+
       resolve({ 
 
         start_timeDisplay: format(timestamp.startTimestamp*1000, 'yyyy-MM-dd'),
         end_timeDisplay: format(timestamp.endTimestamp*1000, 'yyyy-MM-dd'),
-        total: result.length,
-        result: result 
+        total: finalData.length,
+        result: finalData 
         // message: 'Hello, Smart Automation Thailand!',
       });
 

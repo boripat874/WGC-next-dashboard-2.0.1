@@ -53,7 +53,9 @@ export async function Aggregation(aggregation_value: string){
 
 export async function Unit(unit_value: string){
 
-    if(unit_value === "liter"){
+
+
+    if(unit_value === "Liter"){
         unit_value = "Liter";
     }else if(unit_value === "kg"){
         unit_value = "kg";

@@ -30,14 +30,17 @@ export default function Page() {
         if (!reportOpen) {
             const timer = setTimeout(() => {
 
-                Forms1(renderReport, "Alkaline", alkRecUnit, alkRecTank, alkRecAgg, alkRecPeriod, alkRecStart, alkRecEnd)
+                // Forms1(renderReport, "Alkaline", alkRecUnit, alkRecTank, alkRecAgg, alkRecPeriod, alkRecStart, alkRecEnd)
+                Forms1(renderReport, "Alkaline", "kg", "12", "perday", "1day", format(new Date(), 'yyyy-MM-dd'), format(new Date(), 'yyyy-MM-dd'))
                 
             }, 1000); // ปิดหลังจาก 1 วินาที
 
             return () => clearTimeout(timer);
         }
 
+        
         if (alkRecTank !== "--" && alkRecUnit !== "--" && alkRecAgg !== "--" && alkRecPeriod !== "--") {
+            console.log("Tank:", alkRecTank, "Unit:", alkRecUnit, "Agg:", alkRecAgg, "Period:", alkRecPeriod, "Start:", alkRecStart, "End:", alkRecEnd);
             Forms1(renderReport, "Alkaline", alkRecUnit, alkRecTank, alkRecAgg, alkRecPeriod, alkRecStart, alkRecEnd)
         }
 
@@ -48,7 +51,6 @@ export default function Page() {
         setPdfUrl(url);
         setReportOpen(true);
     };
-
 
     const downloadReport = (url: string) => {
         if (!url) return;
