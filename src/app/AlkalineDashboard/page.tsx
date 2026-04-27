@@ -8,7 +8,7 @@ import { TopChannelsSkeleton } from "@/components/Tables/top-channels/skeleton";
 import { createTimeFrameExtractor } from "@/utils/timeframe-extractor";
 import { Suspense } from "react";
 import { OverviewCardsGroup } from "./_components/overview-cards";
-import { addDays, subDays, startOfMonth, startOfYear, format, subMonths } from 'date-fns';
+import { format, subHours } from 'date-fns';
 
 import { OverviewCardsSkeleton } from "./_components/overview-cards/skeleton";
 
@@ -153,7 +153,7 @@ export default function AlkalineDashboard() {
     if (Alkalimixed) {
 
       setAlkaliRoMixData(Alkalimixed.result.map((item: any) => ({
-        name: format(Number(item.created) * 1000, 'yyyy-MM-dd HH:mm'),
+        name: format(subHours(Number(item.created) * 1000, 7), 'yyyy-MM-dd HH:mm'),
         main_volume: item.main_volume,
         ro_volume: item.ro_volume,
       })));

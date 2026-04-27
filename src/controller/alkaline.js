@@ -220,7 +220,7 @@ export const alkalimixed = async (c) => {
       const timestamp = await convertTotimestamp(c.req.query()); // แปลง timestamp
       // const period = await c.req.query();
       // console.log(timestamp);
-
+ 
       const result = await db('alkalimix')
         .select('*')
         .where('start_time', '>=', timestamp.startTimestamp)
